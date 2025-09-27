@@ -1,0 +1,83 @@
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SYL - Safe Your Life</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+</head>
+<body>
+  <div class="phone-container">
+    <!-- HEADER -->
+    <header class="header">
+      <img src="https://raw.githubusercontent.com/aarinformatica/empregojuridico.io/refs/heads/main/logo-syl2.jpg" alt="Logo" class="logo"/>
+      <div class="empresa">
+        <h1>SYL - Safe Your Life</h1>
+        <p id="usernameDisplay"></p>
+      </div>
+    </header>
+
+    <!-- TELA PRINCIPAL -->
+    <main class="screen" id="mainScreen">
+      <div class="row">
+        <button class="button" id="btnSite">
+          <span class="icon">🌐</span>
+          Site
+        </button>
+        <button class="button" id="btnLogin">
+          <span class="icon">🔑</span>
+          Login
+        </button>
+      </div>
+      <div class="row">
+        <button class="button" id="btnMapa">
+          <span class="icon">🗺️</span>
+          Mapa
+        </button>
+        <button class="button" id="btnConfig">
+          <span class="icon">⚙️</span>
+          Configurações
+        </button>
+      </div>
+      <div class="row">
+        <button class="button" id="btnSobre">
+          <span class="icon">ℹ️</span>
+          Sobre
+        </button>
+      </div>
+    </main>
+
+    <!-- MAPA -->
+    <section class="hidden" id="mapScreen">
+      <div id="leafletMap"></div>
+      <button class="map-btn" id="btnRecenter">🎯</button>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <span class="footer-icon" id="btnVoltar">⬅️</span>
+      <div class="footer-info">
+        <span id="horaAtual">--:--</span>
+        <span id="climaInfo">
+          <span id="climaIcon">☁️</span>
+          <span id="climaTexto">Carregando...</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal hidden" id="loginModal">
+    <div class="modal-content">
+      <span class="close" id="closeLogin">&times;</span>
+      <h2>Login</h2>
+      <input type="text" id="usernameInput" placeholder="Digite seu nome"/>
+      <button id="loginConfirm">Entrar</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
