@@ -1,0 +1,273 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f6f6f6;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  height: 100vh;
+}
+
+.phone-container {
+  width: 100vh;
+  height: 100vh;
+  background: linear-gradient(145deg, #ffffff, #ebebeb);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.header {
+  background: linear-gradient(145deg, #4682B4, #00BFFF);
+  color: white;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  width: 55px;
+  height: 55px;
+  border-radius: 10%;
+}
+
+.empresa {
+  color: white;
+  text-align: center;
+  font-size: 14px;
+  flex: 1;
+}
+
+.empresa h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.button {
+  width: 100px;
+  height: 100px;
+  font-size: 14px;
+  background: linear-gradient(145deg, #00BFFF, #4682B4);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+  flex-direction: column;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.button:hover {
+  transform: scale(1.2);
+  opacity: 0.9;
+}
+
+.icon {
+  font-size: 24px;
+}
+
+.footer {
+  height: 50px;
+  background: linear-gradient(145deg, #00BFFF, #4682B4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  padding: 0 10px;
+}
+
+.footer-icon {
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.footer-icon:hover {
+  transform: scale(1.5);
+  opacity: 0.8;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#climaInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+#climaIcon {
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal .close {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Map screen */
+#mapScreen {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#leafletMap {
+  width: 100%;
+  height: 100%;
+}
+
+/* Botão dentro do mapa */
+.map-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #00BFFF;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
+
+.map-btn:hover {
+  transform: scale(1.1);
+  background: #007BFF;
+}
+
+/* Marcador pulsante */
+.pulse-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.pulse-marker::after {
+  content: "";
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+/* ... (todo o CSS anterior mantido) ... */
+
+/* Marcador pulsante */
+.custom-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pulse-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: relative;
+  z-index: 2;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+  z-index: 1;
+}
+
+.marker-label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 5px;
+  text-align: center;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
