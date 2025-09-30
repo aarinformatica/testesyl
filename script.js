@@ -19,29 +19,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const climaTexto = document.getElementById("climaTexto");
   const climaIcon = document.getElementById("climaIcon");
 
-  // Overlay de carregamento
-  let loadingOverlay = document.createElement("div");
-  loadingOverlay.id = "loadingOverlay";
-  loadingOverlay.className = "hidden";
-  loadingOverlay.innerHTML = `
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <p>Carregando localização...</p>
-    </div>`;
-  document.body.appendChild(loadingOverlay);
+  const loadingOverlay = document.getElementById("loadingOverlay");
 
   let map, userCoords = null;
   let username = "Usuário";
   const userMarkers = {};
 
-  // Lista de cores para usuários diferentes
+  // Lista de cores para diferenciar usuários
   const colors = ["#00BFFF", "#FF4500", "#32CD32", "#FFD700", "#FF69B4", "#8A2BE2"];
   const userColors = {};
 
   /* Atualizar hora */
   setInterval(() => {
     const now = new Date();
-    horaAtual.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    if (horaAtual) {
+      horaAtual.textContent = now.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
   }, 1000);
 
   /* Atualizar clima */
@@ -101,9 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="marker-label">${label}</div>
       `,
-      iconSize: [20, 20],
-      iconAnchor: [10, 20],
-      popupAnchor: [0, -20]
+      iconSize: [18, 18],
+      iconAnchor: [9, 18],
+      popupAnchor: [0, -18]
     });
   }
 
@@ -124,44 +120,97 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Calcular distância entre dois pontos
+  function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // raio da Terra em metros
+    const toRad = (x) => (x * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // Alerta sonoro + vibratório
+  function dispararAlerta() {
+    try {
+      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+      audio.play();
+    } catch (e) {
+      console.warn("Falha ao tocar som:", e);
+    }
+    if (navigator.vibrate) {
+      navigator.vibrate([500, 300, 500]);
+    }
+  }
+
   /* Botão Mapa */
   if (btnMapa) {
     btnMapa.addEventListener("click", () => {
       mainScreen.classList.add("hidden");
       mapScreen.classList.remove("hidden");
-      loadingOverlay.classList.remove("hidden");
+      loadingOverlay.classList.remove("hidden"); // exibe tela de carregamento
 
       if (!map) {
-        map = L.map("leafletMap").setView([0, 0], 16);
+        map = L.map("leafletMap").setView([0, 0], 16); // Zoom inicial 16
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap contributors"
         }).addTo(map);
       }
 
       if (navigator.geolocation) {
-        // Primeira localização rápida (menos precisa)
-        navigator.geolocation.getCurrentPosition((pos) => {
-          const { latitude, longitude } = pos.coords;
-          userCoords = [latitude, longitude];
-          map.setView(userCoords, 16);
-          updateUserMarker("me", latitude, longitude, username);
-          channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
-          atualizarClima(latitude, longitude);
-          loadingOverlay.classList.add("hidden");
-        }, () => {
-          alert("Não foi possível obter a localização inicial.");
-          loadingOverlay.classList.add("hidden");
-        }, { enableHighAccuracy: false, timeout: 5000 });
-
-        // Depois, ativa rastreamento contínuo com alta precisão
         navigator.geolocation.watchPosition((pos) => {
           const { latitude, longitude } = pos.coords;
           userCoords = [latitude, longitude];
           map.setView(userCoords, 16);
+
+          // Oculta a tela de carregamento após obter a primeira posição
+          loadingOverlay.classList.add("hidden");
+
+          // Atualiza marcador local
           updateUserMarker("me", latitude, longitude, username);
-          channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
+
+          // Envia para o Ably
+          channel.publish("update", {
+            id: ably.connection.id,
+            name: username,
+            lat: latitude,
+            lon: longitude
+          });
+
+          // Atualiza clima
           atualizarClima(latitude, longitude);
-        }, () => {}, { enableHighAccuracy: true });
+
+          // Verificar proximidade
+          Object.entries(userMarkers).forEach(([id, marker]) => {
+            if (id !== "me") {
+              const pos = marker.getLatLng();
+              const dist = calcularDistancia(latitude, longitude, pos.lat, pos.lng);
+              if (dist <= 100) {
+                dispararAlerta();
+              }
+            }
+          });
+        }, (err) => {
+          console.error("Erro ao obter localização:", err);
+          loadingOverlay.classList.add("hidden");
+        }, {
+          enableHighAccuracy: false, // pega mais rápido inicialmente
+          maximumAge: 0,
+          timeout: 5000
+        });
+
+        // Depois de 5s, ativa precisão alta
+        setTimeout(() => {
+          navigator.geolocation.watchPosition(() => {}, () => {}, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+          });
+        }, 5000);
       }
     });
   }
