@@ -19,6 +19,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const climaTexto = document.getElementById("climaTexto");
   const climaIcon = document.getElementById("climaIcon");
 
+  // Overlay de carregamento
+  let loadingOverlay = document.createElement("div");
+  loadingOverlay.id = "loadingOverlay";
+  loadingOverlay.className = "hidden";
+  loadingOverlay.innerHTML = `
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>Carregando localização...</p>
+    </div>`;
+  document.body.appendChild(loadingOverlay);
+
   let map, userCoords = null;
   let username = "Usuário";
   const userMarkers = {};
@@ -90,9 +101,9 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="marker-label">${label}</div>
       `,
-      iconSize: [30, 30],
-      iconAnchor: [15, 30],
-      popupAnchor: [0, -30]
+      iconSize: [20, 20],
+      iconAnchor: [10, 20],
+      popupAnchor: [0, -20]
     });
   }
 
@@ -118,29 +129,39 @@ document.addEventListener("DOMContentLoaded", () => {
     btnMapa.addEventListener("click", () => {
       mainScreen.classList.add("hidden");
       mapScreen.classList.remove("hidden");
+      loadingOverlay.classList.remove("hidden");
 
       if (!map) {
-        map = L.map("leafletMap").setView([0, 0], 15);
+        map = L.map("leafletMap").setView([0, 0], 16);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap contributors"
         }).addTo(map);
       }
 
       if (navigator.geolocation) {
+        // Primeira localização rápida (menos precisa)
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const { latitude, longitude } = pos.coords;
+          userCoords = [latitude, longitude];
+          map.setView(userCoords, 16);
+          updateUserMarker("me", latitude, longitude, username);
+          channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
+          atualizarClima(latitude, longitude);
+          loadingOverlay.classList.add("hidden");
+        }, () => {
+          alert("Não foi possível obter a localização inicial.");
+          loadingOverlay.classList.add("hidden");
+        }, { enableHighAccuracy: false, timeout: 5000 });
+
+        // Depois, ativa rastreamento contínuo com alta precisão
         navigator.geolocation.watchPosition((pos) => {
           const { latitude, longitude } = pos.coords;
           userCoords = [latitude, longitude];
-          map.setView(userCoords, 15);
-
-          // Atualiza marcador local
+          map.setView(userCoords, 16);
           updateUserMarker("me", latitude, longitude, username);
-
-          // Envia para o Ably
           channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
-
-          // Atualiza clima
           atualizarClima(latitude, longitude);
-        });
+        }, () => {}, { enableHighAccuracy: true });
       }
     });
   }
@@ -157,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnRecenter) {
     btnRecenter.addEventListener("click", () => {
       if (userCoords) {
-        map.setView(userCoords, 15);
+        map.setView(userCoords, 16);
       }
     });
   }
