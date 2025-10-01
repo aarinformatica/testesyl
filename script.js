@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let username = "Usuário";
   let alertMode = "both";
   let tempAlertMode = alertMode;
+  let firstLocation = true;
 
   const userMarkers = {};
   const userColors = {};
@@ -137,7 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return L.divIcon({
       className: "custom-marker",
       html: `
-        <div class="pulse-marker" style="background:${color}"></div>
+        <div class="pulse-marker" style="background:${color}">
+          <div class="pulse-ring"></div>
+        </div>
         <div class="marker-label">${label}</div>
       `,
       iconSize: [16, 16],
@@ -173,93 +176,57 @@ document.addEventListener("DOMContentLoaded", () => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  function emitirAlerta() {
-    if (alertMode === "audio" || alertMode === "both") {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      function tocarBip(inicio) {
-        const osc = ctx.createOscillator();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(550, ctx.currentTime + inicio);
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0.0001, ctx.currentTime + inicio);
-        gainNode.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + inicio + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + 0.5);
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        osc.start(ctx.currentTime + inicio);
-        osc.stop(ctx.currentTime + inicio + 0.5);
-      }
-      tocarBip(0);
-      tocarBip(0.6);
-      tocarBip(1.2);
-    }
-    if ((alertMode === "vibrate" || alertMode === "both") && navigator.vibrate) {
-      navigator.vibrate([200, 100, 200, 100, 200]);
-    }
-  }
-
-  /* BOTÃO MAPA */
+  /* MAPA */
   btnMapa?.addEventListener("click", () => {
     mainScreen.classList.add("hidden");
     mapScreen.classList.remove("hidden");
     btnVoltar.classList.remove("hidden");
-    loadingOverlay.classList.remove("hidden");
 
     if (!map) {
       map = L.map("leafletMap").setView([0, 0], 16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors"
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
-    }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
+      navigator.geolocation.watchPosition((pos) => {
         const { latitude, longitude } = pos.coords;
         userCoords = [latitude, longitude];
-        map.setView(userCoords, 16);
+
+        if (firstLocation) {
+          map.setView(userCoords, 16);
+          firstLocation = false;
+        }
+
         updateUserMarker("me", latitude, longitude, username);
         channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
         atualizarClima(latitude, longitude);
         loadingOverlay.classList.add("hidden");
+      }, () => alert("Erro ao obter localização"), { enableHighAccuracy: true });
 
-        navigator.geolocation.watchPosition((pos) => {
-          const { latitude, longitude } = pos.coords;
-          userCoords = [latitude, longitude];
-          map.setView(userCoords, 16);
-          updateUserMarker("me", latitude, longitude, username);
-          channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
-          atualizarClima(latitude, longitude);
-        });
-      }, () => {
-        loadingOverlay.textContent = "Erro ao obter localização.";
+      channel.subscribe("update", (msg) => {
+        const { id, name, lat, lon } = msg.data;
+        if (id !== ably.connection.id) {
+          updateUserMarker(id, lat, lon, name);
+          if (userCoords) {
+            const dist = calcularDistancia(userCoords[0], userCoords[1], lat, lon);
+            if (dist <= 20) {
+              updateUserMarker(id, lat, lon, name, true);
+              if (alertMode === "sound" || alertMode === "both") new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+              if (alertMode === "vibrate" || alertMode === "both") navigator.vibrate([200, 100, 200]);
+            }
+          }
+        }
       });
     }
   });
 
-  /* VOLTAR */
   btnVoltar?.addEventListener("click", () => {
     mapScreen.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     btnVoltar.classList.add("hidden");
   });
 
-  /* RECENTER */
   btnRecenter?.addEventListener("click", () => {
     if (userCoords) map.setView(userCoords, 16);
-  });
-
-  /* RECEBENDO LOCALIZAÇÕES */
-  channel.subscribe("update", (msg) => {
-    const { id, name, lat, lon } = msg.data;
-    if (id !== ably.connection.id) {
-      if (userCoords) {
-        const dist = calcularDistancia(userCoords[0], userCoords[1], lat, lon);
-        const isAlert = dist <= 100;
-        if (isAlert) emitirAlerta();
-        updateUserMarker(id, lat, lon, name, isAlert);
-      } else {
-        updateUserMarker(id, lat, lon, name);
-      }
-    }
   });
 });
