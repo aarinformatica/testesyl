@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let map, userCoords = null;
   let username = "Usuário";
-  let alertMode = "both"; 
+  let alertMode = "both"; // padrão
   let tempAlertMode = alertMode;
 
   const userMarkers = {};
@@ -72,6 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
         opt.checked = (opt.value === alertMode);
       });
       tempAlertMode = alertMode;
+      applyAnimation.classList.add("hidden");
+      applyAnimation.classList.remove("visible");
     });
   }
   if (closeSettings) closeSettings.addEventListener("click", () => settingsModal.classList.add("hidden"));
@@ -87,10 +89,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const newMode = selected.value;
 
       if (newMode !== alertMode) {
+        // Mostra animação elegante
+        applyAnimation.classList.remove("hidden");
         applyAnimation.classList.add("visible");
+
         setTimeout(() => {
           alertMode = newMode;
           applyAnimation.classList.remove("visible");
+          applyAnimation.classList.add("hidden");
           settingsModal.classList.add("hidden");
         }, 2000);
       } else {
@@ -120,9 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return L.divIcon({
       className: "custom-marker",
       html: `
-        <div class="pulse-marker" style="background:${color}">
-          <div class="pulse-ring" style="background:${color}33"></div>
-        </div>
+        <div class="pulse-marker" style="background:${color}"></div>
         <div class="marker-label">${label}</div>
       `,
       iconSize: [16, 16],
@@ -187,10 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnMapa) btnMapa.addEventListener("click", () => {
     mainScreen.classList.add("hidden");
     mapScreen.classList.remove("hidden");
-
-    // Fade-in overlay
+    btnVoltar.classList.remove("hidden"); // mostra botão voltar
     loadingOverlay.classList.remove("hidden");
-    loadingOverlay.style.opacity = "1";
 
     if (!map) {
       map = L.map("leafletMap").setView([0, 0], 16);
@@ -207,10 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateUserMarker("me", latitude, longitude, username);
         channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
         atualizarClima(latitude, longitude);
-
-        // Fade-out overlay
-        setTimeout(() => loadingOverlay.style.opacity = "0", 300);
-        setTimeout(() => loadingOverlay.classList.add("hidden"), 800);
+        loadingOverlay.classList.add("hidden");
 
         navigator.geolocation.watchPosition((pos) => {
           const { latitude, longitude } = pos.coords;
@@ -229,6 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnVoltar) btnVoltar.addEventListener("click", () => {
     mapScreen.classList.add("hidden");
     mainScreen.classList.remove("hidden");
+    btnVoltar.classList.add("hidden"); // esconde botão voltar
   });
 
   if (btnRecenter) btnRecenter.addEventListener("click", () => {
