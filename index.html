@@ -10,17 +10,33 @@
 </head>
 <body>
   <div class="phone-container">
+    
     <!-- HEADER -->
     <header class="header">
-      <img src="https://raw.githubusercontent.com/aarinformatica/empregojuridico.io/refs/heads/main/logo-syl2.jpg" alt="Logo" class="logo"/>
+      <img src="https://raw.githubusercontent.com/aarinformatica/empregojuridico.io/refs/heads/main/logo-syl2.jpg" 
+           alt="Logo" class="logo"/>
       <div class="empresa">
         <h1>SYL - Safe Your Life</h1>
         <p id="usernameDisplay"></p>
       </div>
     </header>
 
+    <!-- TELA DE BOAS-VINDAS -->
+    <main class="screen" id="welcomeScreen">
+      <div class="welcome-content">
+        <h2 class="welcome-title">Bem Vindo!</h2>
+        <p class="welcome-subtitle">
+          Obrigado por utilizar a versão<br/>
+          inicial deste aplicativo.<br/>
+          Aguarde por novas<br/>
+          funcionalidades!
+        </p>
+        <button class="btn-acessar" id="accessApp">Acessar Aplicativo</button>
+      </div>
+    </main>
+
     <!-- TELA PRINCIPAL -->
-    <main class="screen" id="mainScreen">
+    <main class="screen hidden" id="mainScreen">
       <div class="row">
         <button class="button" id="btnSite">
           <span class="icon">🌐</span>
@@ -49,7 +65,7 @@
       </div>
     </main>
 
-    <!-- MAPA -->
+    <!-- TELA MAPA -->
     <section class="hidden" id="mapScreen">
       <!-- Overlay de carregamento -->
       <div id="loadingOverlay" class="hidden">
@@ -107,6 +123,7 @@
     </div>
   </div>
 
+  <!-- JS -->
   <script src="script.js"></script>
 </body>
 </html>
