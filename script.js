@@ -1,19 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
   const mainScreen = document.getElementById("mainScreen");
   const mapScreen = document.getElementById("mapScreen");
-  const leafletMapDiv = document.getElementById("leafletMap");
-
   const btnMapa = document.getElementById("btnMapa");
   const btnVoltar = document.getElementById("btnVoltar");
   const btnRecenter = document.getElementById("btnRecenter");
   const btnLogin = document.getElementById("btnLogin");
   const btnSite = document.getElementById("btnSite");
+  const btnConfig = document.getElementById("btnConfig");
 
   const loginModal = document.getElementById("loginModal");
   const closeLogin = document.getElementById("closeLogin");
   const loginConfirm = document.getElementById("loginConfirm");
   const usernameInput = document.getElementById("usernameInput");
   const usernameDisplay = document.getElementById("usernameDisplay");
+
+  const settingsModal = document.getElementById("settingsModal");
+  const closeSettings = document.getElementById("closeSettings");
+  const cancelSettings = document.getElementById("cancelSettings");
+  const applySettings = document.getElementById("applySettings");
+  const alertOptions = document.querySelectorAll("input[name='alertOption']");
+  const applyAnimation = document.getElementById("applyAnimation");
 
   const horaAtual = document.getElementById("horaAtual");
   const climaTexto = document.getElementById("climaTexto");
@@ -23,21 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let map, userCoords = null;
   let username = "Usuário";
-  const userMarkers = {};
+  let alertMode = "both"; 
+  let tempAlertMode = alertMode;
 
-  // Lista de cores para diferenciar usuários
-  const colors = ["#00BFFF", "#FF4500", "#32CD32", "#FFD700", "#FF69B4", "#8A2BE2"];
+  const userMarkers = {};
   const userColors = {};
+  const colors = ["#00BFFF", "#FF4500", "#32CD32", "#FFD700", "#FF69B4", "#8A2BE2"];
 
   /* Atualizar hora */
   setInterval(() => {
     const now = new Date();
-    if (horaAtual) {
-      horaAtual.textContent = now.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
+    horaAtual.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }, 1000);
 
   /* Atualizar clima */
@@ -51,44 +53,70 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(() => climaTexto.textContent = "Erro clima");
   }
 
-  /* Botão Site */
-  if (btnSite) {
-    btnSite.addEventListener("click", () => {
-      const modal = document.createElement("div");
-      modal.className = "modal";
-      modal.innerHTML = `
-        <div class="modal-content">
-          <span class="close">&times;</span>
-          <iframe src="https://codepen.io/alexsandroar/full/yyBZRwj" style="width:100%; height:400px; border:none;"></iframe>
-        </div>`;
-      document.body.appendChild(modal);
-      modal.querySelector(".close").addEventListener("click", () => modal.remove());
+  /* Login */
+  if (btnLogin) btnLogin.addEventListener("click", () => loginModal.classList.remove("hidden"));
+  if (closeLogin) closeLogin.addEventListener("click", () => loginModal.classList.add("hidden"));
+  if (loginConfirm) loginConfirm.addEventListener("click", () => {
+    if (usernameInput.value.trim()) {
+      username = usernameInput.value;
+      usernameDisplay.textContent = username;
+    }
+    loginModal.classList.add("hidden");
+  });
+
+  /* Configurações */
+  if (btnConfig) {
+    btnConfig.addEventListener("click", () => {
+      settingsModal.classList.remove("hidden");
+      alertOptions.forEach(opt => {
+        opt.checked = (opt.value === alertMode);
+      });
+      tempAlertMode = alertMode;
     });
   }
+  if (closeSettings) closeSettings.addEventListener("click", () => settingsModal.classList.add("hidden"));
+  if (cancelSettings) cancelSettings.addEventListener("click", () => settingsModal.classList.add("hidden"));
 
-  /* Botão Login */
-  if (btnLogin) {
-    btnLogin.addEventListener("click", () => loginModal.classList.remove("hidden"));
-  }
-  if (closeLogin) {
-    closeLogin.addEventListener("click", () => loginModal.classList.add("hidden"));
-  }
-  if (loginConfirm) {
-    loginConfirm.addEventListener("click", () => {
-      if (usernameInput.value.trim()) {
-        username = usernameInput.value;
-        usernameDisplay.textContent = username;
+  if (applySettings) {
+    applySettings.addEventListener("click", () => {
+      const selected = document.querySelector("input[name='alertOption']:checked");
+      if (!selected) {
+        settingsModal.classList.add("hidden");
+        return;
       }
-      loginModal.classList.add("hidden");
+      const newMode = selected.value;
+
+      if (newMode !== alertMode) {
+        applyAnimation.classList.add("visible");
+        setTimeout(() => {
+          alertMode = newMode;
+          applyAnimation.classList.remove("visible");
+          settingsModal.classList.add("hidden");
+        }, 2000);
+      } else {
+        settingsModal.classList.add("hidden");
+      }
     });
   }
 
-  /* Ably setup */
+  /* Site */
+  if (btnSite) btnSite.addEventListener("click", () => {
+    const modal = document.createElement("div");
+    modal.className = "modal";
+    modal.innerHTML = `
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <iframe src="https://codepen.io/alexsandroar/full/yyBZRwj" style="width:100%; height:400px; border:none;"></iframe>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector(".close").addEventListener("click", () => modal.remove());
+  });
+
+  /* Ably */
   const ably = new Ably.Realtime("k8KGvw.DMPcTg:DCJCRov283jjdnvtNwp1nF37-w2mvZsiRHUTx9L47OU");
   const channel = ably.channels.get("syl-locations");
 
-  // Criar marcador pulsante customizado
-  function createPulseIcon(color, label) {
+  function createPulseIcon(color, label, isAlert = false) {
     return L.divIcon({
       className: "custom-marker",
       html: `
@@ -97,146 +125,127 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="marker-label">${label}</div>
       `,
-      iconSize: [18, 18],
-      iconAnchor: [9, 18],
-      popupAnchor: [0, -18]
+      iconSize: [16, 16],
+      iconAnchor: [8, 16],
+      popupAnchor: [0, -16]
     });
   }
 
-  // Atualizar/exibir marcador de usuário
-  function updateUserMarker(userId, lat, lon, name) {
+  function updateUserMarker(userId, lat, lon, name, isAlert = false) {
     if (!userColors[userId]) {
       userColors[userId] = colors[Object.keys(userColors).length % colors.length];
     }
     const color = userColors[userId];
-
     if (userMarkers[userId]) {
       userMarkers[userId].setLatLng([lat, lon]);
+      userMarkers[userId].setIcon(createPulseIcon(color, name, isAlert));
     } else {
       const marker = L.marker([lat, lon], {
-        icon: createPulseIcon(color, name)
+        icon: createPulseIcon(color, name, isAlert)
       }).addTo(map);
       userMarkers[userId] = marker;
     }
   }
 
-  // Calcular distância entre dois pontos
   function calcularDistancia(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // raio da Terra em metros
-    const toRad = (x) => (x * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) *
-        Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) ** 2;
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1 * Math.PI / 180) *
+              Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  // Alerta sonoro + vibratório
-  function dispararAlerta() {
-    try {
-      const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-      audio.play();
-    } catch (e) {
-      console.warn("Falha ao tocar som:", e);
+  function emitirAlerta() {
+    if (alertMode === "audio" || alertMode === "both") {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function tocarBip(inicio) {
+        const osc = ctx.createOscillator();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(550, ctx.currentTime + inicio);
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0.0001, ctx.currentTime + inicio);
+        gainNode.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + inicio + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + 0.5);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start(ctx.currentTime + inicio);
+        osc.stop(ctx.currentTime + inicio + 0.5);
+      }
+      tocarBip(0);
+      tocarBip(0.6);
+      tocarBip(1.2);
     }
-    if (navigator.vibrate) {
-      navigator.vibrate([500, 300, 500]);
+    if ((alertMode === "vibrate" || alertMode === "both") && navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 200]);
     }
   }
 
   /* Botão Mapa */
-  if (btnMapa) {
-    btnMapa.addEventListener("click", () => {
-      mainScreen.classList.add("hidden");
-      mapScreen.classList.remove("hidden");
-      loadingOverlay.classList.remove("hidden"); // exibe tela de carregamento
+  if (btnMapa) btnMapa.addEventListener("click", () => {
+    mainScreen.classList.add("hidden");
+    mapScreen.classList.remove("hidden");
 
-      if (!map) {
-        map = L.map("leafletMap").setView([0, 0], 16); // Zoom inicial 16
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "© OpenStreetMap contributors"
-        }).addTo(map);
-      }
+    // Fade-in overlay
+    loadingOverlay.classList.remove("hidden");
+    loadingOverlay.style.opacity = "1";
 
-      if (navigator.geolocation) {
+    if (!map) {
+      map = L.map("leafletMap").setView([0, 0], 16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const { latitude, longitude } = pos.coords;
+        userCoords = [latitude, longitude];
+        map.setView(userCoords, 16);
+        updateUserMarker("me", latitude, longitude, username);
+        channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
+        atualizarClima(latitude, longitude);
+
+        // Fade-out overlay
+        setTimeout(() => loadingOverlay.style.opacity = "0", 300);
+        setTimeout(() => loadingOverlay.classList.add("hidden"), 800);
+
         navigator.geolocation.watchPosition((pos) => {
           const { latitude, longitude } = pos.coords;
           userCoords = [latitude, longitude];
           map.setView(userCoords, 16);
-
-          // Oculta a tela de carregamento após obter a primeira posição
-          loadingOverlay.classList.add("hidden");
-
-          // Atualiza marcador local
           updateUserMarker("me", latitude, longitude, username);
-
-          // Envia para o Ably
-          channel.publish("update", {
-            id: ably.connection.id,
-            name: username,
-            lat: latitude,
-            lon: longitude
-          });
-
-          // Atualiza clima
+          channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
           atualizarClima(latitude, longitude);
-
-          // Verificar proximidade
-          Object.entries(userMarkers).forEach(([id, marker]) => {
-            if (id !== "me") {
-              const pos = marker.getLatLng();
-              const dist = calcularDistancia(latitude, longitude, pos.lat, pos.lng);
-              if (dist <= 100) {
-                dispararAlerta();
-              }
-            }
-          });
-        }, (err) => {
-          console.error("Erro ao obter localização:", err);
-          loadingOverlay.classList.add("hidden");
-        }, {
-          enableHighAccuracy: false, // pega mais rápido inicialmente
-          maximumAge: 0,
-          timeout: 5000
         });
+      }, () => {
+        loadingOverlay.textContent = "Erro ao obter localização.";
+      });
+    }
+  });
 
-        // Depois de 5s, ativa precisão alta
-        setTimeout(() => {
-          navigator.geolocation.watchPosition(() => {}, () => {}, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
-          });
-        }, 5000);
-      }
-    });
-  }
+  if (btnVoltar) btnVoltar.addEventListener("click", () => {
+    mapScreen.classList.add("hidden");
+    mainScreen.classList.remove("hidden");
+  });
 
-  /* Botão Voltar */
-  if (btnVoltar) {
-    btnVoltar.addEventListener("click", () => {
-      mapScreen.classList.add("hidden");
-      mainScreen.classList.remove("hidden");
-    });
-  }
+  if (btnRecenter) btnRecenter.addEventListener("click", () => {
+    if (userCoords) map.setView(userCoords, 16);
+  });
 
-  /* Botão Recentrar */
-  if (btnRecenter) {
-    btnRecenter.addEventListener("click", () => {
-      if (userCoords) {
-        map.setView(userCoords, 16);
-      }
-    });
-  }
-
-  /* Receber posições dos outros usuários */
   channel.subscribe("update", (msg) => {
     const { id, name, lat, lon } = msg.data;
     if (id !== ably.connection.id) {
-      updateUserMarker(id, lat, lon, name);
+      if (userCoords) {
+        const dist = calcularDistancia(userCoords[0], userCoords[1], lat, lon);
+        const isAlert = dist <= 100;
+        if (isAlert) emitirAlerta();
+        updateUserMarker(id, lat, lon, name, isAlert);
+      } else {
+        updateUserMarker(id, lat, lon, name);
+      }
     }
   });
 });
