@@ -28,7 +28,7 @@
         </button>
         <button class="button" id="btnLogin">
           <span class="icon">🔑</span>
-          Login
+          Digite seu nome
         </button>
       </div>
       <div class="row">
@@ -78,9 +78,32 @@
   <div class="modal hidden" id="loginModal">
     <div class="modal-content">
       <span class="close" id="closeLogin">&times;</span>
-      <h2>Login</h2>
+      <h2>Digite seu nome</h2>
       <input type="text" id="usernameInput" placeholder="Digite seu nome"/>
-      <button id="loginConfirm">Entrar</button>
+      <button id="loginConfirm" class="btn-apply">Entrar</button>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIGURAÇÕES -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-content">
+      <span id="closeSettings" class="close">&times;</span>
+      <h2>Configurações de Alerta</h2>
+
+      <label><input type="radio" name="alertOption" value="audio"> Somente áudio</label>
+      <label><input type="radio" name="alertOption" value="vibrate"> Somente vibrar</label>
+      <label><input type="radio" name="alertOption" value="both" checked> Áudio + Vibrar</label>
+
+      <!-- Animação de aplicar -->
+      <div id="applyAnimation">
+        <div class="css-spinner"></div>
+        Aplicando alterações...
+      </div>
+
+      <div class="config-actions">
+        <button id="cancelSettings" class="btn-cancel">Cancelar</button>
+        <button id="applySettings" class="btn-apply">Aplicar</button>
+      </div>
     </div>
   </div>
 
