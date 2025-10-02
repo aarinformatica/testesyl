@@ -43,6 +43,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const userColors = {};
   const colors = ["#00BFFF", "#FF4500", "#32CD32", "#FFD700", "#FF69B4", "#8A2BE2"];
 
+  /* POPUP USUÁRIOS */
+  const usersPopup = document.createElement("div");
+  usersPopup.id = "usersPopup";
+  usersPopup.classList.add("hidden");
+  usersPopup.style.position = "absolute";
+  usersPopup.style.top = "10px";
+  usersPopup.style.right = "10px";
+  usersPopup.style.padding = "6px 10px";
+  usersPopup.style.background = "rgba(0,0,0,0.7)";
+  usersPopup.style.color = "#fff";
+  usersPopup.style.borderRadius = "8px";
+  usersPopup.style.fontSize = "14px";
+  usersPopup.style.zIndex = "1000";
+  usersPopup.textContent = "Usuários conectados: 0";
+  mapScreen.appendChild(usersPopup);
+
   /* RELÓGIO */
   setInterval(() => {
     const now = new Date();
@@ -134,6 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const ably = new Ably.Realtime("k8KGvw.DMPcTg:DCJCRov283jjdnvtNwp1nF37-w2mvZsiRHUTx9L47OU");
   const channel = ably.channels.get("syl-locations");
 
+  function atualizarUsuarios() {
+    channel.presence.get((err, members) => {
+      if (!err) {
+        usersPopup.textContent = `Usuários conectados: ${members.length}`;
+      }
+    });
+  }
+
   function createPulseIcon(color, label, isAlert = false) {
     return L.divIcon({
       className: "custom-marker",
@@ -181,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainScreen.classList.add("hidden");
     mapScreen.classList.remove("hidden");
     btnVoltar.classList.remove("hidden");
+    usersPopup.classList.remove("hidden");
 
     if (!map) {
       map = L.map("leafletMap").setView([0, 0], 16);
@@ -218,12 +243,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
+
+    // entrar na presença
+    channel.presence.enter({ id: ably.connection.id, name: username });
+    atualizarUsuarios();
+    channel.presence.subscribe("enter", atualizarUsuarios);
+    channel.presence.subscribe("leave", atualizarUsuarios);
   });
 
   btnVoltar?.addEventListener("click", () => {
     mapScreen.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     btnVoltar.classList.add("hidden");
+    usersPopup.classList.add("hidden");
+
+    // sair da presença
+    channel.presence.leave();
   });
 
   btnRecenter?.addEventListener("click", () => {
