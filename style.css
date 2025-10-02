@@ -225,19 +225,21 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
+  background: #00BFFF;
   position: relative;
   z-index: 2;
 }
 
-.pulse-ring {
+.pulse-marker::after {
+  content: "";
   position: absolute;
-  top: -8px;
-  left: -8px;
-  width: 32px;
-  height: 32px;
+  top: -10px;
+  left: -10px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: rgba(0, 191, 255, 0.4);
-  animation: pulse 1.5s infinite;
+  animation: pulse 1.8s infinite ease-out;
   z-index: 1;
 }
 
@@ -250,8 +252,9 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.5); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% { transform: scale(0.4); opacity: 0.8; }
+  70% { transform: scale(1.4); opacity: 0.2; }
+  100% { transform: scale(1.8); opacity: 0; }
 }
 
 /* ---------------- LOADING OVERLAY ---------------- */
@@ -398,4 +401,46 @@ body {
 .btn-acessar:hover {
   transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(0, 119, 204, 0.4);
+}
+
+/* ---------------- USERS POPUP ---------------- */
+#usersPopup {
+  position: absolute;
+  top: 60px; /* abaixo do header */
+  right: 15px;
+  z-index: 1000;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4); /* fundo fosco */
+  backdrop-filter: blur(6px);      /* efeito vidro fosco */
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+#usersPopup.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+}
+
+#usersPopup:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  #usersPopup {
+    top: 55px; 
+    right: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
 }
