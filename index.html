@@ -43,8 +43,8 @@
           Site
         </button>
         <button class="button" id="btnLogin">
-          <span class="icon">🔑</span>
-          Digite seu nome
+          <span class="icon">📝</span>
+          Insira seu nome (opcional)
         </button>
       </div>
       <div class="row">
@@ -65,8 +65,32 @@
       </div>
     </main>
 
+    <!-- TELA SOBRE -->
+    <main class="screen hidden" id="aboutScreen">
+      <div class="about-container">
+        <h2 class="about-title">Sobre o Aplicativo</h2>
+
+        <img 
+          src="https://raw.githubusercontent.com/aarinformatica/empregojuridico.io/refs/heads/main/logo-syl2.jpg" 
+          alt="Logo SYL" 
+          class="about-logo"
+        />
+
+        <p class="about-text">
+          O <strong>SYL - Safe Your Life</strong> é um aplicativo em sua versão inicial,
+          desenvolvido para auxiliar na segurança e bem-estar dos usuários em tempo real.
+        </p>
+
+        <div class="about-card">
+          <h3>Versão</h3>
+          <p>1.7.0 (Beta)</p>
+        </div>
+        <button class="btn-apply" id="btnVoltarSobre">Voltar ao Menu</button>
+      </div>
+    </main>
+
     <!-- TELA MAPA -->
-    <section class="hidden" id="mapScreen">
+    <section class="screen hidden" id="mapScreen">
       <!-- Overlay de carregamento -->
       <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
