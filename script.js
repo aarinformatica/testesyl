@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let map, userCoords = null;
   let username = "Usuário";
   let alertMode = "both";
-  let tempAlertMode = alertMode;
   let firstLocation = true;
 
   const userMarkers = {};
@@ -72,6 +71,16 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(() => climaTexto.textContent = "Erro clima");
   }
 
+  /* FUNÇÃO SUAVE PARA ESCONDER OVERLAY */
+  function hideLoadingOverlay() {
+    if (!loadingOverlay) return;
+    loadingOverlay.classList.add("fade-out");
+    setTimeout(() => {
+      loadingOverlay.classList.add("hidden");
+      loadingOverlay.classList.remove("fade-out");
+    }, 600); // mesmo tempo da animação CSS
+  }
+
   /* TELA DE BOAS-VINDAS */
   accessAppBtn?.addEventListener("click", () => {
     welcomeScreen.classList.add("hidden");
@@ -93,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
   btnConfig?.addEventListener("click", () => {
     settingsModal.classList.remove("hidden");
     alertOptions.forEach(opt => opt.checked = (opt.value === alertMode));
-    tempAlertMode = alertMode;
     applyAnimation.classList.add("hidden");
     applyAnimation.classList.remove("visible");
   });
@@ -138,15 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ably = new Ably.Realtime("k8KGvw.DMPcTg:DCJCRov283jjdnvtNwp1nF37-w2mvZsiRHUTx9L47OU");
   const channel = ably.channels.get("syl-locations");
 
-  /* FUNÇÃO PARA ATUALIZAR CONTADOR */
-  function atualizarUsuariosPresence() {
-    channel.presence.get((err, members) => {
-      if (!err) {
-        usersPopup.textContent = `Usuários online: ${Object.keys(userMarkers).length}`;
-      }
-    });
-  }
-
+  /* CONTADOR DE USUÁRIOS (baseado em marcadores) */
   function atualizarUsuariosPorMarcadores() {
     usersPopup.textContent = `Usuários online: ${Object.keys(userMarkers).length}`;
   }
@@ -156,9 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return L.divIcon({
       className: "custom-marker",
       html: `
-        <div class="pulse-marker" style="background:${color}">
-          <div class="pulse-ring"></div>
-        </div>
+        <div class="pulse-marker" style="background:${color}"></div>
         <div class="marker-label">${label}</div>
       `,
       iconSize: [16, 16],
@@ -179,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
       userMarkers[userId] = marker;
     }
 
-    atualizarUsuariosPresence(); // Atualiza contador de ambos
+    atualizarUsuariosPorMarcadores();
   }
 
   function calcularDistancia(lat1, lon1, lat2, lon2) {
@@ -200,6 +198,9 @@ document.addEventListener("DOMContentLoaded", () => {
     btnVoltar.classList.remove("hidden");
     usersPopup.classList.remove("hidden");
 
+    // Mostrar overlay de carregamento
+    loadingOverlay.classList.remove("hidden");
+
     if (!map) {
       map = L.map("leafletMap").setView([0, 0], 16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -218,8 +219,14 @@ document.addEventListener("DOMContentLoaded", () => {
         updateUserMarker("me", latitude, longitude, username);
         channel.publish("update", { id: ably.connection.id, name: username, lat: latitude, lon: longitude });
         atualizarClima(latitude, longitude);
-        loadingOverlay.classList.add("hidden");
-      }, () => alert("Erro ao obter localização"), { enableHighAccuracy: true });
+
+        // Ocultar overlay com efeito suave
+        hideLoadingOverlay();
+
+      }, () => {
+        alert("Erro ao obter localização");
+        hideLoadingOverlay();
+      }, { enableHighAccuracy: true });
 
       channel.subscribe("update", (msg) => {
         const { id, name, lat, lon } = msg.data;
@@ -229,19 +236,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const dist = calcularDistancia(userCoords[0], userCoords[1], lat, lon);
             if (dist <= 20) {
               updateUserMarker(id, lat, lon, name, true);
-              if (alertMode === "sound" || alertMode === "both") new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-              if (alertMode === "vibrate" || alertMode === "both") navigator.vibrate([200, 100, 200]);
+              if (alertMode === "sound" || alertMode === "both")
+                new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+              if (alertMode === "vibrate" || alertMode === "both")
+                navigator.vibrate([200, 100, 200]);
             }
           }
         }
       });
     }
 
-    // entrar na presença
+    // Entrar na presença
     channel.presence.enter({ id: ably.connection.id, name: username });
-    atualizarUsuariosPresence();
-    channel.presence.subscribe("enter", atualizarUsuariosPresence);
-    channel.presence.subscribe("leave", atualizarUsuariosPresence);
   });
 
   btnVoltar?.addEventListener("click", () => {
@@ -249,8 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
     mainScreen.classList.remove("hidden");
     btnVoltar.classList.add("hidden");
     usersPopup.classList.add("hidden");
-
-    // sair da presença
     channel.presence.leave();
   });
 
