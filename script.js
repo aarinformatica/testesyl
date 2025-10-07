@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnLogin = document.getElementById("btnLogin");
   const btnSite = document.getElementById("btnSite");
   const btnConfig = document.getElementById("btnConfig");
+  const btnSobre = document.getElementById("btnSobre");
+  const aboutScreen = document.getElementById("aboutScreen");
+  const btnVoltarSobre = document.getElementById("btnVoltarSobre");
 
   /* LOGIN */
   const loginModal = document.getElementById("loginModal");
@@ -47,16 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const usersPopup = document.createElement("div");
   usersPopup.id = "usersPopup";
   usersPopup.classList.add("hidden");
-  usersPopup.style.position = "absolute";
-  usersPopup.style.top = "10px";
-  usersPopup.style.right = "10px";
-  usersPopup.style.padding = "6px 10px";
-  usersPopup.style.background = "rgba(0,0,0,0.7)";
-  usersPopup.style.color = "#fff";
-  usersPopup.style.borderRadius = "8px";
-  usersPopup.style.fontSize = "14px";
-  usersPopup.style.zIndex = "1000";
-  usersPopup.textContent = "Usuários conectados: 0";
   mapScreen.appendChild(usersPopup);
 
   /* RELÓGIO */
@@ -99,9 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* CONFIGURAÇÕES */
   btnConfig?.addEventListener("click", () => {
     settingsModal.classList.remove("hidden");
-    alertOptions.forEach(opt => {
-      opt.checked = (opt.value === alertMode);
-    });
+    alertOptions.forEach(opt => opt.checked = (opt.value === alertMode));
     tempAlertMode = alertMode;
     applyAnimation.classList.add("hidden");
     applyAnimation.classList.remove("visible");
@@ -112,10 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   applySettings?.addEventListener("click", () => {
     const selected = document.querySelector("input[name='alertOption']:checked");
-    if (!selected) {
-      settingsModal.classList.add("hidden");
-      return;
-    }
+    if (!selected) { settingsModal.classList.add("hidden"); return; }
     const newMode = selected.value;
 
     if (newMode !== alertMode) {
@@ -150,14 +138,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const ably = new Ably.Realtime("k8KGvw.DMPcTg:DCJCRov283jjdnvtNwp1nF37-w2mvZsiRHUTx9L47OU");
   const channel = ably.channels.get("syl-locations");
 
-  function atualizarUsuarios() {
+  /* FUNÇÃO PARA ATUALIZAR CONTADOR */
+  function atualizarUsuariosPresence() {
     channel.presence.get((err, members) => {
       if (!err) {
-        usersPopup.textContent = `Usuários conectados: ${members.length}`;
+        usersPopup.textContent = `Usuários online: ${Object.keys(userMarkers).length}`;
       }
     });
   }
 
+  function atualizarUsuariosPorMarcadores() {
+    usersPopup.textContent = `Usuários online: ${Object.keys(userMarkers).length}`;
+  }
+
+  /* MARCADORES */
   function createPulseIcon(color, label, isAlert = false) {
     return L.divIcon({
       className: "custom-marker",
@@ -174,19 +168,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateUserMarker(userId, lat, lon, name, isAlert = false) {
-    if (!userColors[userId]) {
-      userColors[userId] = colors[Object.keys(userColors).length % colors.length];
-    }
+    if (!userColors[userId]) userColors[userId] = colors[Object.keys(userColors).length % colors.length];
     const color = userColors[userId];
+
     if (userMarkers[userId]) {
       userMarkers[userId].setLatLng([lat, lon]);
       userMarkers[userId].setIcon(createPulseIcon(color, name, isAlert));
     } else {
-      const marker = L.marker([lat, lon], {
-        icon: createPulseIcon(color, name, isAlert)
-      }).addTo(map);
+      const marker = L.marker([lat, lon], { icon: createPulseIcon(color, name, isAlert) }).addTo(map);
       userMarkers[userId] = marker;
     }
+
+    atualizarUsuariosPresence(); // Atualiza contador de ambos
   }
 
   function calcularDistancia(lat1, lon1, lat2, lon2) {
@@ -246,9 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // entrar na presença
     channel.presence.enter({ id: ably.connection.id, name: username });
-    atualizarUsuarios();
-    channel.presence.subscribe("enter", atualizarUsuarios);
-    channel.presence.subscribe("leave", atualizarUsuarios);
+    atualizarUsuariosPresence();
+    channel.presence.subscribe("enter", atualizarUsuariosPresence);
+    channel.presence.subscribe("leave", atualizarUsuariosPresence);
   });
 
   btnVoltar?.addEventListener("click", () => {
@@ -263,5 +256,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnRecenter?.addEventListener("click", () => {
     if (userCoords) map.setView(userCoords, 16);
+  });
+
+  /* BOTÃO SOBRE */
+  btnSobre?.addEventListener("click", () => {
+    mainScreen.classList.add("hidden");
+    aboutScreen.classList.remove("hidden");
+  });
+
+  btnVoltarSobre?.addEventListener("click", () => {
+    aboutScreen.classList.add("hidden");
+    mainScreen.classList.remove("hidden");
   });
 });
